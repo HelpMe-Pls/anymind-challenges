@@ -6,6 +6,10 @@ export const CryptoApiSchema = z.object({
     usd: z.number(),
     usd_market_cap: z.number(),
   }),
+  ethereum: z.object({
+    usd: z.number(),
+    usd_market_cap: z.number(),
+  }),
 });
 export type CryptoApiResponse = z.infer<typeof CryptoApiSchema>;
 

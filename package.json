@@ -1,14 +1,14 @@
 {
   "name": "anymind-challenges",
   "module": "index.ts",
-  "type": "module",
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  },
   "private": true,
   "scripts": {
     "backend": "cd backend && bun dev",
     "frontend": "cd frontend && bun dev",
     "dev": "concurrently \"bun backend\" \"bun frontend\""
   },
-  "devDependencies": {
-    "concurrently": "^9.2.0"
-  }
+  "type": "module"
 }
