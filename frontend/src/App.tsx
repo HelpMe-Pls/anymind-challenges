@@ -46,7 +46,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:3000/aggregated-data");
+        const res = await fetch("/api/aggregated-data");
         if (!res.ok)
           throw new Error(((await res.json()) as { error: string }).error);
         const json = (await res.json()) as AggregatedData;
@@ -64,9 +64,7 @@ function App() {
   const updateWeather = async () => {
     setWeatherLoading(true);
     try {
-      const res = await fetch(
-        `http://localhost:3000/weather?city=${weatherCity}`
-      );
+      const res = await fetch(`/api/weather?city=${weatherCity}`);
       if (!res.ok) throw new Error("Failed to fetch weather");
       const newWeather = await res.json();
       setData((prev) => (prev ? { ...prev, weather: newWeather } : null));
