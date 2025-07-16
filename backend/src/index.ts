@@ -1,6 +1,7 @@
 import cors from "cors";
 import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
+import * as http from "http";
 import { Pool } from "pg";
 import { WeatherApiSchema } from "./schema.js";
 
@@ -10,7 +11,7 @@ const DATABASE_URL = process.env.DATABASE_URL ?? "";
 // Initialize Express app
 const app: Express = express();
 app.use(cors());
-const port = 3000;
+// const port = 3000;  // for Dev
 
 // Initialize PostgreSQL Pool
 // Trade-off: Using Pool for connection management. Prod apps use an ORM (e.g., Prisma, Drizzle,...) for migrations & richer querying.
@@ -178,18 +179,18 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 // Start DEV server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+// app.listen(port, () => {
+//   console.log(`Server running at http://localhost:${port}`);
+// });
 
-// const handler = (req: http.IncomingMessage, res: http.ServerResponse) => {
-//   // Strip the /api prefix so Express routes match (e.g., /api/aggregated-data -> /aggregated-data)
-//   if (req.url) {
-//     req.url = req.url.replace(/^\/api/, "") || "/";
-//   }
-//   app(req as any, res as any); // Call the Express app to handle the request
-// };
+const handler = (req: http.IncomingMessage, res: http.ServerResponse) => {
+  // Strip the /api prefix so Express routes match (e.g., /api/aggregated-data -> /aggregated-data)
+  if (req.url) {
+    req.url = req.url.replace(/^\/api/, "") || "/";
+  }
+  app(req as any, res as any); // Call the Express app to handle the request
+};
 
-// export default handler;
+export default handler;
 
-// export { app };
+export { app };
