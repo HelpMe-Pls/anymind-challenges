@@ -5,7 +5,7 @@ node_modules
 out
 dist
 *.tgz
-AnyMind
+Bruno
 
 # code coverage
 coverage

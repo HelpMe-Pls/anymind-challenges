@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import cors from "cors";
-import type { Express, Request, Response } from "express";
+import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
 import { CryptoApiSchema, NewsApiSchema, WeatherApiSchema } from "./schema";
 
@@ -90,7 +90,7 @@ async function fetchAndStoreData() {
     // Fetch Multiple News (top 5 US headlines for search demo). Using `JSONPlaceholder` alternative if key issues, but we're sticking to spec for now)
     // Alternative: Use `JSONPlaceholder` for mock news (e.g., fetch posts as "news") to avoid key dependency.
     const newsRes = await fetch(
-      `https://newsapi.org/v2/top-headlines?country=us&pageSize=5&apiKey=${NEWSAPI_API_KEY}`
+      `https://newsapi.org/v2/top-headlines?country=us&pageSize=12&apiKey=${NEWSAPI_API_KEY}`
     );
     const newsData = NewsApiSchema.parse(await newsRes.json());
     // Runtime check to narrow type (satisfies TS; Zod .nonempty() throws if empty, but we handle gracefully)
@@ -118,10 +118,41 @@ async function fetchAndStoreData() {
 // Alternative: Run this in a cron job (add `node-cron` dep) for periodic updates without restarting server.
 fetchAndStoreData();
 
+// Rate Limiting (Part 3)
+// In-memory store: Map<ip, {count: number, resetTime: number}>
+// Limit: 5 requests per 60 seconds per IP.
+// Trade-off: Simple and dep-free, but not persistent (lost on restart). Prod: Use Redis with TTL keys.
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 5;
+const WINDOW_MS = 60 * 1000; // 1 minute
+
+// Middleware: Check rate limit by IP
+const rateLimiter = (req: Request, res: Response, next: NextFunction) => {
+  const ip = req.ip || req.socket.remoteAddress || "unknown";
+  const now = Date.now();
+  let record = rateLimitStore.get(ip);
+
+  if (!record || now > record.resetTime) {
+    // Reset window
+    record = { count: 0, resetTime: now + WINDOW_MS };
+  }
+
+  if (record.count > RATE_LIMIT) {
+    console.warn(`Rate limit exceeded for IP: ${ip}`);
+    return res.status(429).json({
+      error: "Too many requests, please wait before retrying.",
+    });
+  }
+
+  record.count++;
+  rateLimitStore.set(ip, record);
+  next();
+};
+
 // Endpoint: /aggregated-data
 // Queries DB and aggregates into single JSON (normalized/unified format).
 // If DB empty, could re-fetch here, but we pre-fetch on startup for efficiency.
-app.get("/aggregated-data", (_req: Request, res: Response) => {
+app.get("/aggregated-data", rateLimiter, (_req: Request, res: Response) => {
   const cryptos = db.prepare("SELECT * FROM crypto").all() as Array<{
     name: string;
     symbol: string;
@@ -145,7 +176,7 @@ app.get("/aggregated-data", (_req: Request, res: Response) => {
 
   const aggregated = {
     crypto: cryptos,
-    weather: weathers[0], // Single object as before
+    weather: weathers[0],
     latest_news: newsItems,
   };
 
@@ -153,7 +184,7 @@ app.get("/aggregated-data", (_req: Request, res: Response) => {
 });
 
 // New Endpoint: /weather?city=... (for dynamic city updates)
-app.get("/weather", async (req: Request, res: Response) => {
+app.get("/weather", rateLimiter, async (req: Request, res: Response) => {
   const city = (req.query.city as string) || "New York";
   try {
     const weatherRes = await fetch(

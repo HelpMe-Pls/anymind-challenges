@@ -47,7 +47,8 @@ function App() {
     const fetchData = async () => {
       try {
         const res = await fetch("http://localhost:3000/aggregated-data");
-        if (!res.ok) throw new Error("Failed to fetch data");
+        if (!res.ok)
+          throw new Error(((await res.json()) as { error: string }).error);
         const json = (await res.json()) as AggregatedData;
         setData(json);
       } catch (err) {
