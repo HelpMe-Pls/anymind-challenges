@@ -1,7 +1,6 @@
 import cors from "cors";
 import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
-import * as http from "http";
 import { Pool } from "pg";
 import { WeatherApiSchema } from "./schema.js";
 
@@ -42,7 +41,7 @@ const rateLimiter = (req: Request, res: Response, next: NextFunction) => {
     record = { count: 0, resetTime: now + WINDOW_MS };
   }
 
-  if (record.count > RATE_LIMIT) {
+  if (record.count >= RATE_LIMIT) {
     console.warn(`Rate limit exceeded for IP: ${ip}`);
     return res.status(429).json({
       error: "Too many requests, please wait before retrying.",
@@ -62,7 +61,7 @@ app.get(
       // Note: PG table names are case-sensitive if created with quotes (e.g., "crypto").
       // If created without quotes, they are lowercased by default.
       const cryptoRes = await pool.query(
-        "SELECT * FROM crypto ORDER BY fetched_at DESC LIMIT 2"
+        "SELECT * FROM crypto ORDER BY fetched_at ASC LIMIT 10"
       );
       const cryptos = cryptoRes.rows as Array<{
         name: string;
@@ -159,18 +158,18 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 // Start DEV server
-// app.listen(port, () => {
-//   console.log(`Server running at http://localhost:${port}`);
-// });
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
 
-const handler = (req: http.IncomingMessage, res: http.ServerResponse) => {
-  // Strip the /api prefix so Express routes match (e.g., /api/aggregated-data -> /aggregated-data)
-  if (req.url) {
-    req.url = req.url.replace(/^\/api/, "") || "/";
-  }
-  app(req as any, res as any); // Call the Express app to handle the request
-};
+// const handler = (req: http.IncomingMessage, res: http.ServerResponse) => {
+//   // Strip the /api prefix so Express routes match (e.g., /api/aggregated-data -> /aggregated-data)
+//   if (req.url) {
+//     req.url = req.url.replace(/^\/api/, "") || "/";
+//   }
+//   app(req as any, res as any); // Call the Express app to handle the request
+// };
 
-export default handler;
+// export default handler;
 
-export { app };
+// export { app };

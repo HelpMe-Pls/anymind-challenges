@@ -35,23 +35,28 @@ async function fetchAndStoreData() {
     await client.query("DELETE FROM news;");
     console.log("Old data cleared.");
 
-    // Fetch Multiple Cryptos (Bitcoin + Ethereum)
+    // Fetch 10 Coins (top by market cap, with 24h data and sparkline)
     const cryptoRes = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_market_cap=true"
+      "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=true&price_change_percentage=24h"
     );
+    if (!cryptoRes.ok)
+      throw new Error(`CoinGecko API error: ${cryptoRes.statusText}`);
     const cryptoData = CryptoApiSchema.parse(await cryptoRes.json());
 
-    const bitcoin = cryptoData.bitcoin;
-    await client.query(
-      "INSERT INTO crypto (name, symbol, price, market_cap) VALUES ($1, $2, $3, $4)",
-      ["Bitcoin", "BTC", bitcoin.usd, bitcoin.usd_market_cap]
-    );
-
-    const ethereum = cryptoData.ethereum;
-    await client.query(
-      "INSERT INTO crypto (name, symbol, price, market_cap) VALUES ($1, $2, $3, $4)",
-      ["Ethereum", "ETH", ethereum.usd, ethereum.usd_market_cap]
-    );
+    for (const coin of cryptoData) {
+      await client.query(
+        "INSERT INTO crypto (name, symbol, price, market_cap, price_change_24h, volume_24h, sparkline_7d) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [
+          coin.name,
+          coin.symbol.toUpperCase(),
+          coin.current_price,
+          coin.market_cap,
+          coin.price_change_percentage_24h,
+          coin.total_volume,
+          JSON.stringify(coin.sparkline_in_7d.price), // Stored as JSON array
+        ]
+      );
+    }
     console.log("Crypto data stored.");
 
     // Fetch Weather (Ho Chi Minh as default)

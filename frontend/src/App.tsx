@@ -10,13 +10,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
-  Cloud,
-  DollarSign,
-  Loader2,
-  Newspaper,
-  TrendingUp,
-} from "lucide-react";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Cloud, Loader2, Newspaper, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
 
 // Type for aggregated data (matches backend)
 interface AggregatedData {
@@ -25,6 +28,9 @@ interface AggregatedData {
     symbol: string;
     price: number;
     market_cap: number;
+    price_change_24h: number | null;
+    volume_24h: number;
+    sparkline_7d: number[]; // Array for chart data
   }>;
   weather: { city: string; temperature: number; condition: string };
   latest_news: Array<{ title: string; source: string; url: string }>;
@@ -42,11 +48,11 @@ function App() {
   const [weatherCity, setWeatherCity] = useState("Ho Chi Minh");
   const [newsKeyword, setNewsKeyword] = useState("");
 
-  // Fetch aggregated data on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/aggregated-data");
+        // const res = await fetch("/api/aggregated-data");
+        const res = await fetch("http://localhost:3000/aggregated-data"); // For dev
         if (!res.ok)
           throw new Error(((await res.json()) as { error: string }).error);
         const json = (await res.json()) as AggregatedData;
@@ -60,11 +66,14 @@ function App() {
     fetchData();
   }, []);
 
-  // Function to fetch updated weather by city
+  // Get weather by city
   const updateWeather = async () => {
     setWeatherLoading(true);
     try {
-      const res = await fetch(`/api/weather?city=${weatherCity}`);
+      // const res = await fetch(`/api/weather?city=${weatherCity}`);
+      const res = await fetch(
+        `http://localhost:3000/weather?city=${weatherCity}`
+      ); // For dev
       if (!res.ok) throw new Error("Failed to fetch weather");
       const newWeather = await res.json();
       setData((prev) => (prev ? { ...prev, weather: newWeather } : null));
@@ -141,80 +150,128 @@ function App() {
             </h2>
           </div>
 
-          <Card className="mb-4">
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="text-lg">Price Filter</CardTitle>
               <CardDescription>
-                Filter cryptocurrencies by price range
+                Filter cryptocurrencies by price range (Top 10 by Market Cap)
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4 items-center">
+              <div className="flex gap-4 items-center mb-6">
                 <div className="flex-1">
                   <label className="text-sm font-medium mb-1 block">
-                    Min Price ($):{" "}
+                    Min Price ($)
                     <Input
+                      className="mt-2"
                       type="number"
                       placeholder="0"
                       value={cryptoMinPrice}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCryptoMinPrice(e.target.value)
-                      }
+                      onChange={(e) => setCryptoMinPrice(e.target.value)}
                     />
                   </label>
                 </div>
                 <div className="flex-1">
                   <label className="text-sm font-medium mb-1 block">
-                    Max Price ($):{" "}
+                    Max Price ($)
                     <Input
+                      className="mt-2"
                       type="number"
                       placeholder="No limit"
                       value={cryptoMaxPrice}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setCryptoMaxPrice(e.target.value)
-                      }
+                      onChange={(e) => setCryptoMaxPrice(e.target.value)}
                     />
                   </label>
                 </div>
               </div>
+
+              <Separator className="mb-6" />
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Coin</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>24h</TableHead>
+                    <TableHead>24h Volume</TableHead>
+                    <TableHead>Market Cap</TableHead>
+                    <TableHead>Last 7 Days</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCrypto.map((crypto) => {
+                    // Calculate min/max for Y-domain with padding for volatility
+                    const prices = crypto.sparkline_7d;
+                    const minPrice = Math.min(...prices);
+                    const maxPrice = Math.max(...prices);
+                    const padding = (maxPrice - minPrice) * 0.1; // 10% padding
+                    const domain = [minPrice - padding, maxPrice + padding]; // Custom domain for Y-axis
+
+                    // Determine trend color (green if positive 24h change, red if negative)
+                    const trendColor =
+                      (crypto.price_change_24h ?? 0) >= 0
+                        ? "#00ff00"
+                        : "#ff0000";
+
+                    // Prepare chart data
+                    const chartData = prices.map((price, index) => ({
+                      price,
+                      index,
+                    }));
+
+                    return (
+                      <TableRow key={crypto.name}>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <span className="font-medium">{crypto.name}</span>
+                            <Badge variant="secondary" className="ml-2">
+                              {crypto.symbol}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>${crypto.price.toLocaleString()}</TableCell>
+                        <TableCell
+                          className={
+                            (crypto.price_change_24h ?? 0) >= 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {crypto.price_change_24h?.toFixed(2)}%
+                        </TableCell>
+                        <TableCell>
+                          ${formatNumber(crypto.volume_24h)}
+                        </TableCell>
+                        <TableCell>
+                          ${formatNumber(crypto.market_cap)}
+                        </TableCell>
+                        <TableCell>
+                          <ResponsiveContainer width="100%" height={40}>
+                            <AreaChart
+                              data={chartData}
+                              margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                            >
+                              <YAxis domain={domain} hide={true} />
+                              <Area
+                                type="monotone"
+                                dataKey="price"
+                                stroke={trendColor}
+                                fill={trendColor}
+                                fillOpacity={0.2}
+                                strokeWidth={2}
+                                activeDot={false}
+                                isAnimationActive={false}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredCrypto.map((crypto) => (
-              <Card
-                key={crypto.name}
-                className="hover:shadow-lg transition-shadow"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl">{crypto.name}</CardTitle>
-                    <Badge variant="secondary">{crypto.symbol}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground flex items-center">
-                        <DollarSign className="h-4 w-4 mr-1" />
-                        Current Price
-                      </span>
-                      <span className="text-2xl font-bold text-green-600">
-                        ${crypto.price.toLocaleString()}
-                      </span>
-                    </div>
-                    <Separator />
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Market Cap</span>
-                      <span className="font-semibold">
-                        ${formatNumber(crypto.market_cap)}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </div>
 
         {/* Weather Section */}
@@ -288,7 +345,7 @@ function App() {
           <Card className="mb-4">
             <CardHeader>
               <CardTitle className="text-lg">Search Articles</CardTitle>
-              <CardDescription>Find news articles by keyword</CardDescription>
+              <CardDescription>Find news articles by keywords</CardDescription>
             </CardHeader>
             <CardContent>
               <Input

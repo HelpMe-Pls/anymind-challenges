@@ -1,16 +1,20 @@
 import { z } from "zod";
 
 // CoinGecko ----------------------------------------------------------
-export const CryptoApiSchema = z.object({
-  bitcoin: z.object({
-    usd: z.number(),
-    usd_market_cap: z.number(),
-  }),
-  ethereum: z.object({
-    usd: z.number(),
-    usd_market_cap: z.number(),
-  }),
-});
+export const CryptoApiSchema = z.array(
+  z.object({
+    id: z.string(),
+    name: z.string(),
+    symbol: z.string(),
+    current_price: z.number(),
+    market_cap: z.number(),
+    total_volume: z.number(), // 24h volume
+    price_change_percentage_24h: z.number().nullable(),
+    sparkline_in_7d: z.object({
+      price: z.array(z.number()), // For 7d chart
+    }),
+  })
+);
 export type CryptoApiResponse = z.infer<typeof CryptoApiSchema>;
 
 // OpenWeather --------------------------------------------------------
