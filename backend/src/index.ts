@@ -5,7 +5,6 @@ import { Pool } from "pg";
 import { WeatherApiSchema } from "./schema";
 
 const OPENWEATHER_API_KEY = Bun.env.OPENWEATHER_API_KEY ?? "";
-const NEWSAPI_API_KEY = Bun.env.NEWSAPI_API_KEY ?? "";
 const DATABASE_URL = Bun.env.DATABASE_URL ?? "";
 
 // Initialize Express app
@@ -162,3 +161,5 @@ app.get("/", (_req: Request, res: Response) => {
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
+
+export default app;
