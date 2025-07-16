@@ -30,9 +30,15 @@ interface AggregatedData {
     market_cap: number;
     price_change_24h: number | null;
     volume_24h: number;
-    sparkline_7d: number[]; // Array for chart data
+    sparkline_7d: number[];
   }>;
-  weather: { city: string; temperature: number; condition: string };
+  weather: Array<{
+    city: string;
+    temperature: number;
+    condition: string;
+    humidity: number;
+    wind_speed: number;
+  }>;
   latest_news: Array<{ title: string; source: string; url: string }>;
 }
 
@@ -76,7 +82,13 @@ function App() {
       ); // For dev
       if (!res.ok) throw new Error("Failed to fetch weather");
       const newWeather = await res.json();
-      setData((prev) => (prev ? { ...prev, weather: newWeather } : null));
+      setData((prev) => {
+        if (!prev) return null;
+        const updatedWeathers = prev.weather.filter(
+          (w) => w.city.toLowerCase() !== weatherCity.toLowerCase()
+        );
+        return { ...prev, weather: [...updatedWeathers, newWeather] };
+      });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -131,7 +143,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background dark">
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-8 px-8">
         <div className="mb-8">
           <h1 className="text-4xl text-foreground font-bold mb-2">
             Market Dashboard
@@ -158,7 +170,7 @@ function App() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4 items-center mb-6">
+              <div className="flex gap-4 items-center mb-6 max-w-1/3">
                 <div className="flex-1">
                   <label className="text-sm font-medium mb-1 block">
                     Min Price ($)
@@ -275,117 +287,156 @@ function App() {
         </div>
 
         {/* Weather Section */}
-        <div className="mb-8">
-          <div className="flex items-center mb-4">
-            <Cloud className="h-6 w-6 mr-2 text-blue-600" />
-            <h2 className="text-2xl text-foreground font-semibold">Weather</h2>
-          </div>
-
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-lg">City Selection</CardTitle>
-              <CardDescription>
-                Get weather updates for any city
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2 mb-6">
-                <Input
-                  type="text"
-                  placeholder="Enter city name"
-                  value={weatherCity}
-                  onChange={(e) => setWeatherCity(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={updateWeather}
-                  disabled={weatherLoading}
-                  className="min-w-[100px]"
-                >
-                  {weatherLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Loading
-                    </>
-                  ) : (
-                    "Update"
-                  )}
-                </Button>
-              </div>
-
-              <Separator className="mb-6" />
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-4">
-                  <Cloud className="h-8 w-8 mr-2 text-blue-600" />
-                  <h3 className="text-2xl font-bold">{data.weather.city}</h3>
-                </div>
-                <div className="text-4xl font-bold text-blue-600 mb-2">
-                  {data.weather.temperature}°C
-                </div>
-                <Badge
-                  variant="secondary"
-                  className="text-lg dark:bg-green-700 px-4 py-2 mt-3"
-                >
-                  {data.weather.condition}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* News Section */}
-        <div>
-          <div className="flex items-center mb-4">
-            <Newspaper className="h-6 w-6 mr-2 text-purple-600" />
-            <h2 className="text-2xl text-foreground font-semibold">
-              Latest News
-            </h2>
-          </div>
-
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle className="text-lg">Search Articles</CardTitle>
-              <CardDescription>Find news articles by keywords</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Input
-                type="text"
-                placeholder="Enter search keyword..."
-                value={newsKeyword}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setNewsKeyword(e.target.value)
-                }
-              />
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredNews.map((article) => (
-              <Card
-                key={article.url}
-                className="hover:shadow-lg transition-shadow"
-              >
-                <CardHeader>
-                  <CardTitle className="text-lg leading-tight line-clamp-2">
-                    {article.title}
-                  </CardTitle>
-                  <CardDescription>
-                    <Badge variant="outline">{article.source}</Badge>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild variant="outline" className="w-full">
-                    <a
-                      href={article.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Read Full Article →
-                    </a>
+        <div className="flex flex-col md:flex-row gap-8">
+          {" "}
+          {/* NEW: Responsive flex layout */}
+          {/* Weather Section */}
+          <div className="flex-1">
+            {" "}
+            {/* NEW: flex-1 for equal width */}
+            <div className="flex items-center mb-4">
+              <Cloud className="h-6 w-6 mr-2 text-blue-600" />
+              <h2 className="text-2xl text-foreground font-semibold">
+                Weather
+              </h2>
+            </div>
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="text-lg">City Selection</CardTitle>
+                <CardDescription>
+                  Get weather updates for any city (Top 10 in Vietnam below)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-5 mb-6">
+                  <Input
+                    type="text"
+                    placeholder="Enter city name"
+                    value={weatherCity}
+                    onChange={(e) => setWeatherCity(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={updateWeather}
+                    disabled={weatherLoading}
+                    className="min-w-[100px]"
+                  >
+                    {weatherLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Loading
+                      </>
+                    ) : (
+                      "Update"
+                    )}
                   </Button>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+
+                <Separator className="mb-6" />
+
+                <Table className="w-full table-auto">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-1/5">City</TableHead>
+                      <TableHead className="w-1/5 text-center">
+                        Temperature (°C)
+                      </TableHead>
+                      <TableHead className="w-1/5 text-center">
+                        Condition
+                      </TableHead>
+                      <TableHead className="w-1/5 text-center">
+                        Humidity (%)
+                      </TableHead>
+                      <TableHead className="w-1/5 text-center">
+                        Wind Speed (m/s)
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.weather.map((w) => (
+                      <TableRow key={w.city}>
+                        <TableCell>{w.city}</TableCell>
+                        <TableCell className="text-center">
+                          {w.temperature.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{w.condition}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {w.humidity}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {w.wind_speed.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+          {/* News Section - UPDATED: Table with 2 columns */}
+          <div className="flex-1">
+            {" "}
+            {/* NEW: flex-1 for equal width */}
+            <div className="flex items-center mb-4">
+              <Newspaper className="h-6 w-6 mr-2 text-purple-600" />
+              <h2 className="text-2xl text-foreground font-semibold">
+                Latest News
+              </h2>
+            </div>
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="text-lg">Search Articles</CardTitle>
+                <CardDescription>Find news articles by keyword</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6">
+                  <Input
+                    type="text"
+                    placeholder="Enter search keyword..."
+                    value={newsKeyword}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNewsKeyword(e.target.value)
+                    }
+                  />
+                </div>
+
+                <Separator className="mb-6" />
+
+                <Table className="w-full table-auto">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-3/4">Title</TableHead>{" "}
+                      {/* Wider for title */}
+                      <TableHead className="w-1/4 text-center">
+                        Source
+                      </TableHead>{" "}
+                      {/* Narrower for badge */}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredNews.map((article) => (
+                      <TableRow key={article.url}>
+                        <TableCell>
+                          <a
+                            href={article.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline"
+                          >
+                            {article.title}
+                          </a>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline">{article.source}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

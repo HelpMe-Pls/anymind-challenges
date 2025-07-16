@@ -59,23 +59,47 @@ async function fetchAndStoreData() {
     }
     console.log("Crypto data stored.");
 
-    // Fetch Weather (Ho Chi Minh as default)
-    const weatherRes = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=Ho%20Chi%20Minh&appid=${OPENWEATHER_API_KEY}&units=metric`
-    );
-    if (!weatherRes.ok)
-      throw new Error(`OpenWeather API error: ${weatherRes.statusText}`);
-    const weatherData = WeatherApiSchema.parse(await weatherRes.json());
-    const weatherCondition = weatherData.weather[0]?.main;
-    if (!weatherCondition) {
-      console.warn("No weather condition found from API.");
-    } else {
-      await client.query(
-        "INSERT INTO weather (city, temperature, condition) VALUES ($1, $2, $3)",
-        ["Ho Chi Minh", weatherData.main.temp, weatherCondition]
+    // Weather: Seed 10 Vietnamese cities
+    const cities = [
+      "Ho Chi Minh",
+      "Hanoi",
+      "Da Nang",
+      "Hoi An",
+      "Can Tho",
+      "Nha Trang",
+      "Hue",
+      "Da Lat",
+      "Buon Ma Thuot",
+      "Vinh",
+    ];
+    for (const city of cities) {
+      const weatherRes = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
+          city
+        )}&appid=${OPENWEATHER_API_KEY}&units=metric`
       );
-      console.log("Weather data stored.");
+      if (!weatherRes.ok) {
+        console.warn(
+          `Failed to fetch weather for ${city}: ${weatherRes.statusText}`
+        );
+        continue;
+      }
+      const weatherData = WeatherApiSchema.parse(await weatherRes.json());
+      const condition = weatherData.weather[0]?.main;
+      if (condition) {
+        await client.query(
+          "INSERT INTO weather (city, temperature, condition, humidity, wind_speed) VALUES ($1, $2, $3, $4, $5)",
+          [
+            city,
+            weatherData.main.temp,
+            condition,
+            weatherData.main.humidity,
+            weatherData.wind.speed,
+          ]
+        );
+      }
     }
+    console.log("Weather data stored for 10 cities.");
 
     // Fetch Multiple News (top 12 US headlines)
     const newsRes = await fetch(

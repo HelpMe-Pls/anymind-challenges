@@ -19,8 +19,12 @@ export type CryptoApiResponse = z.infer<typeof CryptoApiSchema>;
 
 // OpenWeather --------------------------------------------------------
 export const WeatherApiSchema = z.object({
-  main: z.object({ temp: z.number() }),
+  main: z.object({
+    temp: z.number(),
+    humidity: z.number(),
+  }),
   weather: z.array(z.object({ main: z.string() })).nonempty(),
+  wind: z.object({ speed: z.number() }),
 });
 export type WeatherApiResponse = z.infer<typeof WeatherApiSchema>;
 

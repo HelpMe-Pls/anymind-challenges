@@ -71,12 +71,14 @@ app.get(
       }>;
 
       const weatherRes = await pool.query(
-        "SELECT * FROM weather ORDER BY fetched_at DESC LIMIT 1"
+        "SELECT * FROM weather ORDER BY fetched_at DESC LIMIT 10"
       );
       const weathers = weatherRes.rows as Array<{
         city: string;
         temperature: number;
         condition: string;
+        humidity: number;
+        wind_speed: number;
       }>;
 
       const newsRes = await pool.query(
@@ -100,7 +102,7 @@ app.get(
 
       const aggregated = {
         crypto: cryptos,
-        weather: weathers[0],
+        weather: weathers,
         latest_news: newsItems,
       };
 
@@ -112,8 +114,7 @@ app.get(
   }
 );
 
-// New Endpoint: /weather?city=... (for dynamic city updates)
-// CHANGED: Only fetches from external API, doesn't store in DB (for this live endpoint)
+// Dynamic endpoint `/weather?city=...`
 app.get("/weather", rateLimiter, async (req: Request, res: Response) => {
   const city = (req.query.city as string) || "ho chi minh";
   try {
@@ -122,11 +123,9 @@ app.get("/weather", rateLimiter, async (req: Request, res: Response) => {
         city
       )}&appid=${OPENWEATHER_API_KEY}&units=metric`
     );
-    // Handle API error responses (e.g., 404 for invalid city)
     if (!weatherRes.ok) {
       const errorData = await weatherRes.json();
       throw new Error(
-        // NOTE: Temp typecast, should verify this error's response shape
         (errorData as { message: string }).message ||
           "Failed to fetch weather from external API."
       );
@@ -138,10 +137,31 @@ app.get("/weather", rateLimiter, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid weather data received." });
     }
 
+    // Store in DB (UPSERT to update if city exists, or insert new)
+    await pool.query(
+      `INSERT INTO weather (city, temperature, condition, humidity, wind_speed)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (city) DO UPDATE SET
+         temperature = EXCLUDED.temperature,
+         condition = EXCLUDED.condition,
+         humidity = EXCLUDED.humidity,
+         wind_speed = EXCLUDED.wind_speed,
+         fetched_at = CURRENT_TIMESTAMP`,
+      [
+        city,
+        weatherData.main.temp,
+        condition,
+        weatherData.main.humidity,
+        weatherData.wind.speed,
+      ]
+    );
+
     const result = {
       city,
       temperature: weatherData.main.temp,
       condition,
+      humidity: weatherData.main.humidity,
+      wind_speed: weatherData.wind.speed,
     };
     res.json(result);
   } catch (error) {
