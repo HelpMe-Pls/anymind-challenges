@@ -29,8 +29,5 @@
   ],
   "installCommand": "bun i",
   "buildCommand": "bun run build",
-  "installFeatures": {
-    "installCommand": "false"
-  },
   "installCommandInRoot": true
 }
