@@ -27,8 +27,8 @@
       "dest": "frontend/$1"
     }
   ],
-  "installCommand": "bun install",
-  "buildCommand": "bun run build:all",
+  "installCommand": "bun i",
+  "buildCommand": "bun run build",
   "installFeatures": {
     "installCommand": "false"
   },
