@@ -3,7 +3,7 @@ import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
 import * as http from "http";
 import { Pool } from "pg";
-import { WeatherApiSchema } from "./schema";
+import { WeatherApiSchema } from "./schema.js";
 
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY ?? "";
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
