@@ -1,11 +1,12 @@
 import cors from "cors";
 import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
+import * as http from "http";
 import { Pool } from "pg";
 import { WeatherApiSchema } from "./schema";
 
-const OPENWEATHER_API_KEY = Bun.env.OPENWEATHER_API_KEY ?? "";
-const DATABASE_URL = Bun.env.DATABASE_URL ?? "";
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY ?? "";
+const DATABASE_URL = process.env.DATABASE_URL ?? "";
 
 // Initialize Express app
 const app: Express = express();
@@ -157,9 +158,19 @@ app.get("/", (_req: Request, res: Response) => {
   res.redirect(301, "/aggregated-data");
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+// Start DEV server
+// app.listen(port, () => {
+//   console.log(`Server running at http://localhost:${port}`);
+// });
 
-export default app;
+const handler = (req: http.IncomingMessage, res: http.ServerResponse) => {
+  // Strip the /api prefix so Express routes match (e.g., /api/aggregated-data -> /aggregated-data)
+  if (req.url) {
+    req.url = req.url.replace(/^\/api/, "") || "/";
+  }
+  app(req as any, res as any); // Call the Express app to handle the request
+};
+
+export default handler;
+
+export { app };
