@@ -19,12 +19,12 @@ const pool = new Pool({
   connectionString: DATABASE_URL,
   // Add SSL for Neon connections in production:
   ssl: {
-    rejectUnauthorized: false, // Set to true if you have a CA cert; false for demo is common.
+    rejectUnauthorized: false, // Set to `true` if you have a CA cert; `false` for demo is common.
   },
 });
 
 //------------------------------Rate Limiting (Part 3)
-// In-memory store: Map<ip, {count: number, resetTime: number}>
+// INFO: In-memory store using `Map`
 // Limit: 5 requests per 60 seconds per IP.
 // Trade-off: Simple and dep-free, but not persistent (lost on restart). Prod: Use Redis with TTL keys.
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -54,12 +54,13 @@ const rateLimiter = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+//------------------------------ Part 1
 app.get(
   "/aggregated-data",
   rateLimiter,
   async (_req: Request, res: Response) => {
     try {
-      // Note: PG table names are case-sensitive if created with quotes (e.g., "crypto").
+      // PG table names are case-sensitive if created with quotes (e.g., "crypto").
       // If created without quotes, they are lowercased by default.
       const cryptoRes = await pool.query(
         "SELECT * FROM crypto ORDER BY fetched_at ASC LIMIT 10"

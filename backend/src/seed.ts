@@ -1,10 +1,9 @@
 import { Pool } from "pg";
 import { CryptoApiSchema, NewsApiSchema, WeatherApiSchema } from "./schema";
 
-// Ensure you have these in your .env or provide them here for local seeding
 const OPENWEATHER_API_KEY = Bun.env.OPENWEATHER_API_KEY ?? "";
 const NEWSAPI_API_KEY = Bun.env.NEWSAPI_API_KEY ?? "";
-const DATABASE_URL = Bun.env.DATABASE_URL ?? ""; // Use your Neon URL
+const DATABASE_URL = Bun.env.DATABASE_URL ?? ""; // Get this from Neon
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
@@ -33,7 +32,7 @@ async function fetchAndStoreData() {
     await client.query("DELETE FROM crypto;");
     await client.query("DELETE FROM weather;");
     await client.query("DELETE FROM news;");
-    console.log("Old data cleared.");
+    console.log("✅ Old data cleared.");
 
     // Fetch 10 Coins (top by market cap, with 24h data and sparkline)
     const cryptoRes = await fetch(
@@ -57,7 +56,7 @@ async function fetchAndStoreData() {
         ]
       );
     }
-    console.log("Crypto data stored.");
+    console.log("✅ Crypto data stored.");
 
     // Weather: Seed 10 Vietnamese cities
     const cities = [
@@ -99,7 +98,7 @@ async function fetchAndStoreData() {
         );
       }
     }
-    console.log("Weather data stored for 10 cities.");
+    console.log("✅ Weather data stored.");
 
     // Fetch Multiple News (top 12 US headlines)
     const newsRes = await fetch(
@@ -117,10 +116,10 @@ async function fetchAndStoreData() {
           [article.title, article.source.name, article.url]
         );
       }
-      console.log("News data stored.");
+      console.log("✅ News data stored.");
     }
 
-    console.log("Data seeding complete!");
+    console.log("Data seeding complete! 🎉");
   } catch (error) {
     console.error("Error during data seeding:", error);
   } finally {
@@ -129,4 +128,4 @@ async function fetchAndStoreData() {
   }
 }
 
-fetchAndStoreData(); // Execute the seeding function
+fetchAndStoreData();
