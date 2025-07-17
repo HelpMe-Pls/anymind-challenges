@@ -80,7 +80,11 @@ function App() {
       // const res = await fetch(
       //   `http://localhost:3000/weather?city=${weatherCity}`
       // ); // For dev
-      if (!res.ok) throw new Error("Failed to fetch weather");
+      if (!res.ok)
+        throw new Error(
+          ((await res.json()) as { error: string }).error ||
+            "Failed to fetch weather"
+        );
       const newWeather = await res.json();
       setData((prev) => {
         if (!prev) return null;
@@ -198,11 +202,12 @@ function App() {
               </div>
 
               <Separator className="mb-6" />
-
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Coin</TableHead>
+                    <TableHead className="sticky left-0 bg-card/95">
+                      Coin
+                    </TableHead>
                     <TableHead>Price</TableHead>
                     <TableHead>24h</TableHead>
                     <TableHead>24h Volume</TableHead>
@@ -233,7 +238,7 @@ function App() {
 
                     return (
                       <TableRow key={crypto.name}>
-                        <TableCell>
+                        <TableCell className="sticky left-0 bg-card/95">
                           <div className="flex items-center">
                             <span className="font-medium">{crypto.name}</span>
                             <Badge variant="secondary" className="ml-2">
@@ -261,7 +266,12 @@ function App() {
                           <ResponsiveContainer width="100%" height={40}>
                             <AreaChart
                               data={chartData}
-                              margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                              margin={{
+                                top: 0,
+                                right: 0,
+                                left: 0,
+                                bottom: 0,
+                              }}
                             >
                               <YAxis domain={domain} hide={true} />
                               <Area
@@ -288,12 +298,7 @@ function App() {
 
         {/* Weather Section */}
         <div className="flex flex-col md:flex-row gap-8">
-          {" "}
-          {/* NEW: Responsive flex layout */}
-          {/* Weather Section */}
           <div className="flex-1">
-            {" "}
-            {/* NEW: flex-1 for equal width */}
             <div className="flex items-center mb-4">
               <Cloud className="h-6 w-6 mr-2 text-blue-600" />
               <h2 className="text-2xl text-foreground font-semibold">
@@ -337,7 +342,9 @@ function App() {
                 <Table className="w-full table-auto">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-1/5">City</TableHead>
+                      <TableHead className="sticky left-0 bg-card/95 w-1/5">
+                        City
+                      </TableHead>
                       <TableHead className="w-1/5 text-center">
                         Temperature (°C)
                       </TableHead>
@@ -355,12 +362,27 @@ function App() {
                   <TableBody>
                     {data.weather.map((w) => (
                       <TableRow key={w.city}>
-                        <TableCell>{w.city}</TableCell>
+                        <TableCell className="sticky left-0 bg-card/95">
+                          {w.city}
+                        </TableCell>
                         <TableCell className="text-center">
                           {w.temperature.toFixed(2)}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="secondary">{w.condition}</Badge>
+                          <Badge
+                            variant="secondary"
+                            className={
+                              w.condition == "Rain"
+                                ? "border-cyan-400 bg-sky-400/30"
+                                : w.condition == "Clouds"
+                                ? "border-slate-400 bg-slate-400/30"
+                                : w.condition === "Clear"
+                                ? "border-slate-700 bg-card/30"
+                                : ""
+                            }
+                          >
+                            {w.condition}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-center">
                           {w.humidity}
@@ -375,10 +397,9 @@ function App() {
               </CardContent>
             </Card>
           </div>
-          {/* News Section - UPDATED: Table with 2 columns */}
+
+          {/* News Section */}
           <div className="flex-1">
-            {" "}
-            {/* NEW: flex-1 for equal width */}
             <div className="flex items-center mb-4">
               <Newspaper className="h-6 w-6 mr-2 text-purple-600" />
               <h2 className="text-2xl text-foreground font-semibold">
@@ -407,12 +428,10 @@ function App() {
                 <Table className="w-full table-auto">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-3/4">Title</TableHead>{" "}
-                      {/* Wider for title */}
-                      <TableHead className="w-1/4 text-center">
+                      <TableHead>Title</TableHead>
+                      <TableHead className="w-3/4 text-center">
                         Source
-                      </TableHead>{" "}
-                      {/* Narrower for badge */}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

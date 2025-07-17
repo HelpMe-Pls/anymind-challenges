@@ -11,7 +11,7 @@ const DATABASE_URL = process.env.DATABASE_URL ?? "";
 // Initialize Express app
 const app: Express = express();
 app.use(cors());
-// const port = 3000;  // for Dev
+// const port = 3000; // for Dev
 
 // Initialize PostgreSQL Pool
 // Trade-off: Using Pool for connection management. Prod apps use an ORM (e.g., Prisma, Drizzle,...) for migrations & richer querying.
