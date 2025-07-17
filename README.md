@@ -11,7 +11,7 @@ hire-worthy or not, _your_ candid insights will be invaluable.
 I pour my heart into these challenges because I truly love coding, but
 facing silence after investing so much is definitely discouraging. This may be my very last take-home attempt, as I always try to give these projects my utmost dedication — not just for opportunities, but for my genuine passion for the craft.
 
-To make things easy, I have already [deployed the app](anymind-challenges.vercel.app) on Vercel, so you can evaluate it immediately without wasting setup time.
+To make things easy, I have already [deployed the app](https://anymind-challenges.vercel.app) on Vercel, so you can evaluate it immediately without wasting setup time.
 
 If no feedback is forthcoming, I will chalk this up as lost time and respectfully redirect my energy toward opportunities that offer mutual engagement and learning. Your perspective truly matters, and I appreciate you considering this request.
 
